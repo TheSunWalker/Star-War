@@ -61,6 +61,7 @@ public class GameController : MonoBehaviour
     public int Money = 0;//金额
     public Text MoneyText;//显示金额的文字
     public GameObject ShopButton;//商店按钮
+    public GameObject MuteButton;//静音按钮
 
     public GameStatus mStatus = GameStatus.Idle;//游戏状态
 
@@ -75,7 +76,8 @@ public class GameController : MonoBehaviour
     /// </summary>
     void AddEvents()
     {
-        //EventTriggerListener.Get(ShopButton).onClick = OnShop;
+        EventTriggerListener.Get(ShopButton).onClick = OnShop;
+        EventTriggerListener.Get(MuteButton).onClick = OnMute;
     }
 
     /// <summary>
@@ -105,7 +107,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void CheckStart()
     {
-        if (mStatus == GameStatus.Idle && Input.GetKeyDown(KeyCode.G))
+        if (mStatus == GameStatus.Idle && (Input.GetKeyDown(KeyCode.G) || Input.GetMouseButtonDown(0)))
             mStatus = GameStatus.Gaming;
     }
 
@@ -202,5 +204,19 @@ public class GameController : MonoBehaviour
     {
         Money += num;
         MoneyText.text = Money.ToString();
+    }
+
+    /// <summary>
+    /// 进入商店
+    /// </summary>
+    void OnShop(GameObject go)
+    {
+        Application.Quit();
+    }
+
+    void OnMute(GameObject go)
+    {
+        AudioSource clip = GetComponent<AudioSource>();
+        clip.mute = !clip.mute;
     }
 }
