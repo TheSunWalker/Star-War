@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class EnemyAI : MonoBehaviour
 {
@@ -34,6 +35,29 @@ public class EnemyAI : MonoBehaviour
             speed = 100 + (int)(diff*5f);
         }
         Info = new EnemyInfo(boss, maxHp, speed);
+        if (!boss)
+        {
+            List<int> SkillList = new List<int>();
+            List<int> skills = new List<int>();
+            if (GameController.Instance.totalBossCount >= 2)//第2波开始加入*加速*技能
+                SkillList.Add(101);
+            if (GameController.Instance.totalBossCount >= 4)//第4波开始加入*闪烁*技能
+                SkillList.Add(103);
+            if (GameController.Instance.totalBossCount >= 6)//第6波开始加入*隐身*技能
+                SkillList.Add(102);
+            int skillNum = Random.Range(0, SkillList.Count + 1);
+            for (int i = 0; i < skillNum; ++i)
+            {
+                int id = SkillList[Random.Range(0, SkillList.Count)];
+                skills.Add(id);
+            }
+            Info.SetSkill(skills);
+        }
+        for (int i = 0; i < Info.SkillList.Count; ++i)
+        {
+            if (Info.SkillList[i] != 103)
+                SkillManager.Instance.DoSkill(Info.SkillList[i], gameObject);
+        }
         EventTriggerListener.Get(gameObject).onClick = OnHit;
     }
 
@@ -75,7 +99,7 @@ public class EnemyAI : MonoBehaviour
                 CheckEnd();
                 break;
             case "Shield":
-                Info.Speed = (int)(Info.Speed*(1 - GameController.Instance.ShieldReduce));
+                FixSpeed((int)(Info.Speed * (1 - GameController.Instance.ShieldReduce)));
                 break;
             default:
                 break;
@@ -90,6 +114,11 @@ public class EnemyAI : MonoBehaviour
         Info.CurHp -= GameController.Instance.Damage;
         if (Info.CurHp <= 0)
             CheckEnd();
+        else
+        {
+            if (Info.SkillList.Contains(103))
+                SkillManager.Instance.DoSkill(103, gameObject);
+        }
     }
 
     /// <summary>
@@ -97,6 +126,33 @@ public class EnemyAI : MonoBehaviour
     /// </summary>
     void CheckEnd()
     {
+        if (Info.Boss)//BOSS技能: 分裂
+            GameController.Instance.GenerateExtraEnemy(Random.Range(3, 6), transform.position);
         Destroy(gameObject);
+        GameController.Instance.FixMoney(Info.MaxHp + Info.SkillList.Count);
+    }
+
+    /// <summary>
+    /// 修改移动速度
+    /// </summary>
+    /// <param name="targetSpeed">目标速度</param>
+    /// <param name="multiple">是否成倍</param>
+    public void FixSpeed(float targetSpeed, bool multiple = false)
+    {
+        Info.Speed = multiple ? (int) (Info.Speed*targetSpeed) : (int) targetSpeed;
+    }
+
+    /// <summary>
+    /// 移动至指定位置
+    /// </summary>
+    /// <param name="target">目标位置</param>
+    /// <param name="duration">时间</param>
+    /// <param name="delay">延迟</param>
+    public void Move(Vector3 target, float duration, float delay = 0)
+    {
+        Image img = GetComponent<Image>();
+        Tweener tweener = img.rectTransform.DOMove(target, duration);
+        tweener.SetEase(duration == 0 ? Ease.Flash : Ease.OutQuad);
+        tweener.SetDelay(delay);
     }
 }

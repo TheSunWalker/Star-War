@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Security.Policy;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -19,6 +20,7 @@ public class EnemyInfo
     public int MaxHp;//最大血量
     public int CurHp;//当前血量
     public int Speed;//移动速度
+    public List<int> SkillList = new List<int>();//技能列表
 
     public EnemyInfo(bool boss, int maxHp, int speed)
     {
@@ -26,17 +28,16 @@ public class EnemyInfo
         CurHp = MaxHp = maxHp;
         Speed = speed;
     }
+
+    public void SetSkill(List<int> skills)
+    {
+        SkillList = skills;
+    }
 }
 
 public class GameController : MonoBehaviour
 {
-    private static GameController instance;
-
-    public static GameController Instance
-    {
-        get { return instance; }
-        set { instance = value; }
-    }
+    public static GameController Instance { get; set; }
 
     void Awake()
     {
@@ -52,17 +53,29 @@ public class GameController : MonoBehaviour
 
     public Image BaseHp;//基地血条
     public Image ShieldImg;//需要改变透明度的护盾图片
-    public Text[] ShieldText;//护盾说明文字,0为Shield,1为效能说明
+    public Text ShieldText;//护盾说明文字
     private int MaxBaseHp = 100;//基地最大血量
     private int CurBaseHp = 0;//基地当前血量
     public float ShieldReduce = 0.6f;//护盾减速效能
     public int Damage = 1;//单次点击伤害量
+    public int Money = 0;//金额
+    public Text MoneyText;//显示金额的文字
+    public GameObject ShopButton;//商店按钮
 
     public GameStatus mStatus = GameStatus.Idle;//游戏状态
 
     void Start()
     {
         Init();
+        AddEvents();
+    }
+
+    /// <summary>
+    /// 添加点击事件
+    /// </summary>
+    void AddEvents()
+    {
+        //EventTriggerListener.Get(ShopButton).onClick = OnShop;
     }
 
     /// <summary>
@@ -75,9 +88,9 @@ public class GameController : MonoBehaviour
         Damage = 1;
         BaseHp.fillAmount = 1;
         ShieldImg.CrossFadeAlpha(1, 0, false);
-        ShieldText[1].text = "Speed Reduce: 60%";
-        for (int i = 0; i < ShieldText.Length; i++)
-            ShieldText[i].CrossFadeAlpha(1, 0, false);
+        ShieldText.text = "Speed Reduce: 60%";
+        Money = 0;
+        MoneyText.text = "0";
     }
 
     void Update()
@@ -145,6 +158,29 @@ public class GameController : MonoBehaviour
     }
 
     /// <summary>
+    /// 生成不计入总数的*小型*敌人,用于技能效果,避免生成boss
+    /// </summary>
+    /// <param name="num">生成的数量</param>
+    /// <param name="point">中心点，生成在这个位置附近</param>
+    public void GenerateExtraEnemy(int num, Vector3 point)
+    {
+        for (int i = 0; i < num; ++i)
+        {
+            GameObject enemy = Instantiate(StarPrefab);//实例化敌人预设体
+            enemy.transform.position = point; //设定生成位置
+            enemy.transform.parent = EnemyParent;//加入父物体
+            EnemyAI ai = enemy.GetComponent<EnemyAI>();
+            ai.Init(false);
+            float newX = 0;
+            while (newX > 850 || newX < 50)
+                newX = point.x + Random.Range(-300, 300);
+            float newY = point.y + Random.Range(-300, 300);
+            Vector3 target = new Vector3(newX, newY);
+            ai.Move(target, 0.35f);
+        }
+    }
+
+    /// <summary>
     /// 基地被星星击中
     /// </summary>
     /// <param name="dmg">伤害量</param>
@@ -155,9 +191,16 @@ public class GameController : MonoBehaviour
         BaseHp.fillAmount = percentage;
         ShieldReduce = CurBaseHp*0.006f;
         ShieldImg.CrossFadeAlpha(percentage, 0, false);
-        ShieldText[1].text = "Speed Reduce: " + (ShieldReduce*100).ToString("f0") + "%";
-        ShieldText[0].CrossFadeAlpha(percentage, 0, false);
-        //for (int i = 0; i < ShieldText.Length; i++)
-        //    ShieldText[i].CrossFadeAlpha(percentage, 0, false);
+        ShieldText.text = "Speed Reduce: " + (ShieldReduce*100).ToString("f0") + "%";
+    }
+
+    /// <summary>
+    /// 修改金额, *每1血量可获得1金额 *每个技能额外获得1金额
+    /// </summary>
+    /// <param name="num">修改量</param>
+    public void FixMoney(int num)
+    {
+        Money += num;
+        MoneyText.text = Money.ToString();
     }
 }
