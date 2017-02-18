@@ -10,6 +10,9 @@ public class EnemyAI : MonoBehaviour
     public float ForceDestroyTime = 10;//强制销毁时间
     private float generateTime = 0;//生成时间
     public Text HpText;//显示血量
+    public AudioClip HitClip;//被击中音效
+    public AudioClip EndClip;//死亡音效
+    private AudioSource mAudioSource;//
 
     /// <summary>
     /// 初始化数据
@@ -17,6 +20,7 @@ public class EnemyAI : MonoBehaviour
     /// <param name="boss">是否是Boss</param>
     public void Init(bool boss)
     {
+        mAudioSource = GetComponent<AudioSource>();
         int diff = GameController.Instance.totalBossCount;
         generateTime = Time.time;
         int maxHp = 0;
@@ -83,7 +87,7 @@ public class EnemyAI : MonoBehaviour
     /// </summary>
     void CheckDestroy()
     {
-        if (Time.time - generateTime >= ForceDestroyTime)
+        if (Time.time - generateTime >= ForceDestroyTime || GameController.Instance.mStatus == GameStatus.End)
             Destroy(gameObject);
     }
 
@@ -96,7 +100,7 @@ public class EnemyAI : MonoBehaviour
         {
             case "Base":
                 GameController.Instance.OnHit(Info.Boss ? 5 : 1);
-                CheckEnd();
+                CheckEnd(true);
                 break;
             case "Shield":
                 FixSpeed((int)(Info.Speed * (1 - GameController.Instance.ShieldReduce)));
@@ -116,6 +120,7 @@ public class EnemyAI : MonoBehaviour
             CheckEnd();
         else
         {
+            mAudioSource.PlayOneShot(HitClip);
             if (Info.SkillList.Contains(103))
                 SkillManager.Instance.DoSkill(103, gameObject);
         }
@@ -123,13 +128,24 @@ public class EnemyAI : MonoBehaviour
 
     /// <summary>
     /// 检查销毁自己时是否触发特效
+    /// <param name="isBase">是否击中基地</param>
     /// </summary>
-    void CheckEnd()
+    void CheckEnd(bool isBase = false)
     {
-        if (Info.Boss)//BOSS技能: 分裂
-            GameController.Instance.GenerateExtraEnemy(Random.Range(3, 6), transform.position);
-        Destroy(gameObject);
-        GameController.Instance.FixMoney(Info.MaxHp + Info.SkillList.Count);
+        if (!isBase)
+        {
+            mAudioSource.PlayOneShot(EndClip);
+            if (Info.Boss) //BOSS技能: 分裂
+            {
+                GameController.Instance.GenerateExtraEnemy(Random.Range(3, 6), transform.position);
+                GameController.Instance.killBossCount++;
+            }
+            else
+                GameController.Instance.killEnemyCount++;
+            GameController.Instance.FixMoney(Info.MaxHp + Info.SkillList.Count);
+        }
+        transform.position = new Vector3(9999, 9999);
+        Destroy(gameObject, .5f);
     }
 
     /// <summary>

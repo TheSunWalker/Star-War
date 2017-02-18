@@ -1,9 +1,12 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Security.Policy;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 public enum GameStatus
 {
@@ -62,6 +65,14 @@ public class GameController : MonoBehaviour
     public Text MoneyText;//显示金额的文字
     public GameObject ShopButton;//商店按钮
     public GameObject MuteButton;//静音按钮
+    public AudioSource mAudioSource;//
+    public AudioClip BaseHitClip;//基地被击中音效
+    public AudioClip GameEndClip;//游戏结束音效
+
+    public Image GameEndPanel;//结束界面
+    public GameObject RestartButton;//重新开始
+    public GameObject QuitButton;//退出按钮
+    public Text ResultText;//积分文本
 
     public GameStatus mStatus = GameStatus.Idle;//游戏状态
 
@@ -78,6 +89,8 @@ public class GameController : MonoBehaviour
     {
         EventTriggerListener.Get(ShopButton).onClick = OnShop;
         EventTriggerListener.Get(MuteButton).onClick = OnMute;
+        EventTriggerListener.Get(RestartButton).onClick = OnRestart;
+        EventTriggerListener.Get(QuitButton).onClick = OnQuit;
     }
 
     /// <summary>
@@ -85,7 +98,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void Init()
     {
-        CurBaseHp = MaxBaseHp = 100;
+        CurBaseHp = MaxBaseHp = 10;
         ShieldReduce = 0.6f;
         Damage = 1;
         BaseHp.fillAmount = 1;
@@ -93,6 +106,11 @@ public class GameController : MonoBehaviour
         ShieldText.text = "Speed Reduce: 60%";
         Money = 0;
         MoneyText.text = "0";
+        killEnemyCount = 0;
+        killBossCount = 0;
+        totalEnemyCount = 0;
+        totalBossCount = 0;
+        mStatus = GameStatus.Gaming;
     }
 
     void Update()
@@ -116,6 +134,9 @@ public class GameController : MonoBehaviour
     private int totalEnemyCount = 0;//当前总共生成的敌人数量
     public int totalBossCount = 0;//当前总共生成的boss数量，充当难度等级
     public int BossWave = 10;//当totalEnemyCount达到指定BossWave的倍数后生成Boss，随波数递增
+    public int killEnemyCount = 0;//当前总共杀死的敌人数量
+    public int killBossCount = 0;//当前总共杀死的boss数量，充当难度等级
+
     void CheckGenerateLogic()
     {
         if(mStatus == GameStatus.Gaming)
@@ -145,7 +166,7 @@ public class GameController : MonoBehaviour
     {
         bool bBoss = totalEnemyCount > 0 && totalEnemyCount % BossWave == 0;//判断是否是Boss
         GameObject enemy = Instantiate(bBoss ? BossPrefab : StarPrefab);//实例化敌人预设体
-        enemy.transform.position = new Vector3(Random.Range(50, 851), 1650); //设定生成位置
+        enemy.transform.position = new Vector3(Random.Range(50, Screen.width - 50), Screen.height + 50); //设定生成位置
         enemy.transform.parent = EnemyParent;//加入父物体
         EnemyAI ai = enemy.GetComponent<EnemyAI>();
         ai.Init(bBoss);
@@ -174,7 +195,7 @@ public class GameController : MonoBehaviour
             EnemyAI ai = enemy.GetComponent<EnemyAI>();
             ai.Init(false);
             float newX = 0;
-            while (newX > 850 || newX < 50)
+            while (newX > Screen.width - 50 || newX < 50)
                 newX = point.x + Random.Range(-300, 300);
             float newY = point.y + Random.Range(-300, 300);
             Vector3 target = new Vector3(newX, newY);
@@ -194,6 +215,33 @@ public class GameController : MonoBehaviour
         ShieldReduce = CurBaseHp*0.006f;
         ShieldImg.CrossFadeAlpha(percentage, 0, false);
         ShieldText.text = "Speed Reduce: " + (ShieldReduce*100).ToString("f0") + "%";
+        if (CurBaseHp <= 0)
+        {
+            mAudioSource.PlayOneShot(GameEndClip);
+            mStatus = GameStatus.End;
+            ShowEnd();
+        }
+        else
+        {
+            mAudioSource.PlayOneShot(BaseHitClip);
+        }
+    }
+
+    /// <summary>
+    /// 显示结束界面
+    /// </summary>
+    void ShowEnd()
+    {
+        GetGameResult();
+        GameEndPanel.rectTransform.DOLocalMove(Vector3.zero, .5f);
+    }
+
+    /// <summary>
+    /// 获取游戏结果显示在结束界面上
+    /// </summary>
+    void GetGameResult()
+    {
+        ResultText.text = killEnemyCount + "\n" + killBossCount + "\n\n" + (killEnemyCount * 10 + killBossCount * 50);
     }
 
     /// <summary>
@@ -214,9 +262,22 @@ public class GameController : MonoBehaviour
         Application.Quit();
     }
 
+    private bool isMute = false;
     void OnMute(GameObject go)
     {
-        AudioSource clip = GetComponent<AudioSource>();
-        clip.mute = !clip.mute;
+        isMute = !isMute;
+        AudioListener.volume = isMute ? 0 : 1;
+
+    }
+
+    void OnRestart(GameObject go)
+    {
+        Init();
+        GameEndPanel.rectTransform.DOLocalMove(new Vector3(0, 2000), .5f);
+    }
+
+    void OnQuit(GameObject go)
+    {
+        Application.Quit();
     }
 }
