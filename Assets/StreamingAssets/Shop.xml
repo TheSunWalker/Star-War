@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <ShopItem>
+    <ID>10001</ID>
+    <Info>Defender, attack enemy automaticly.</Info>
+    <Price>100,220,460,1000,2200</Price>
+    <AttributeName>Damage,Attack Interval</AttributeName>
+    <Attributes>1,1;1,0.9;2,0.8;2,0.7;3,0.7</Attributes>
+  </ShopItem>
+  <ShopItem>
+    <ID>10002</ID>
+    <Info>Bomber, recharge from dead enemies, click to damage all enemies.</Info>
+    <Price>120,260,570,1250,2750</Price>
+    <AttributeName>Damage,Recharge</AttributeName>
+    <Attributes>3,30;3,28;4,25;4,23;5,20</Attributes>
+  </ShopItem>
+  <ShopItem>
+    <ID>10003</ID>
+    <Info>Healer, repair the base continuously and very slowly.</Info>
+    <Price>75,200,550,1500,4000</Price>
+    <AttributeName>Heal/sec</AttributeName>
+    <Attributes>0.1;0.3;0.5;0.7;1</Attributes>
+  </ShopItem>
+</root>
+

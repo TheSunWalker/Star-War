@@ -8,36 +8,6 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
-public enum GameStatus
-{
-    //游戏状态：等待，游戏中，暂停，结束
-    Idle,Gaming,Pause,End
-}
-
-/// <summary>
-/// 敌人类
-/// </summary>
-public class EnemyInfo
-{
-    public bool Boss;//是否是boss
-    public int MaxHp;//最大血量
-    public int CurHp;//当前血量
-    public int Speed;//移动速度
-    public List<int> SkillList = new List<int>();//技能列表
-
-    public EnemyInfo(bool boss, int maxHp, int speed)
-    {
-        Boss = boss;
-        CurHp = MaxHp = maxHp;
-        Speed = speed;
-    }
-
-    public void SetSkill(List<int> skills)
-    {
-        SkillList = skills;
-    }
-}
-
 public class GameController : MonoBehaviour
 {
     public static GameController Instance { get; set; }
@@ -74,6 +44,9 @@ public class GameController : MonoBehaviour
     public GameObject QuitButton;//退出按钮
     public Text ResultText;//积分文本
 
+    public Image ShopPanel;//商店界面
+    public GameObject CloseShopButton;//关闭商店按钮
+
     public GameStatus mStatus = GameStatus.Idle;//游戏状态
 
     void Start()
@@ -91,6 +64,7 @@ public class GameController : MonoBehaviour
         EventTriggerListener.Get(MuteButton).onClick = OnMute;
         EventTriggerListener.Get(RestartButton).onClick = OnRestart;
         EventTriggerListener.Get(QuitButton).onClick = OnQuit;
+        EventTriggerListener.Get(CloseShopButton).onClick = CloseShop;
     }
 
     /// <summary>
@@ -98,7 +72,6 @@ public class GameController : MonoBehaviour
     /// </summary>
     void Init()
     {
-        CurBaseHp = MaxBaseHp = 10;
         ShieldReduce = 0.6f;
         Damage = 1;
         BaseHp.fillAmount = 1;
@@ -111,6 +84,7 @@ public class GameController : MonoBehaviour
         totalEnemyCount = 0;
         totalBossCount = 0;
         mStatus = GameStatus.Gaming;
+        LoadShopConfig();
     }
 
     void Update()
@@ -259,7 +233,36 @@ public class GameController : MonoBehaviour
     /// </summary>
     void OnShop(GameObject go)
     {
-        Application.Quit();
+        Tweener tweener = ShopPanel.rectTransform.DOLocalMoveX(0, .3f);
+        tweener.SetUpdate(true);
+        mStatus = GameStatus.Pause;
+        Time.timeScale = 0;
+    }
+
+    /// <summary>
+    /// 载入商店界面
+    /// </summary>
+    void LoadShopConfig()
+    {
+    }
+
+    /// <summary>
+    /// 关闭商店界面
+    /// </summary>
+    void CloseShop(GameObject go)
+    {
+        Tweener tweener = ShopPanel.rectTransform.DOLocalMoveX(1200, .3f);
+        tweener.SetUpdate(true);
+        tweener.OnComplete(ResetTimeScale);
+    }
+
+    /// <summary>
+    /// 继续游戏
+    /// </summary>
+    void ResetTimeScale()
+    {
+        mStatus = GameStatus.Gaming;
+        Time.timeScale = 1;
     }
 
     private bool isMute = false;

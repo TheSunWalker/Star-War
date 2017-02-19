@@ -115,6 +115,8 @@ public class EnemyAI : MonoBehaviour
     /// </summary>
     public void OnHit(GameObject go)
     {
+        if (GameController.Instance.mStatus != GameStatus.Gaming)
+            return;
         Info.CurHp -= GameController.Instance.Damage;
         if (Info.CurHp <= 0)
             CheckEnd();
