@@ -47,6 +47,9 @@ public class GameController : MonoBehaviour
     public Image ShopPanel;//商店界面
     public GameObject CloseShopButton;//关闭商店按钮
 
+    public Image Tips;//全局提示信息条
+    public Text TipsText;//信息内容
+
     public GameStatus mStatus = GameStatus.Idle;//游戏状态
 
     void Start()
@@ -73,6 +76,7 @@ public class GameController : MonoBehaviour
     void Init()
     {
         ShieldReduce = 0.6f;
+        CurBaseHp = MaxBaseHp = 100;
         Damage = 1;
         BaseHp.fillAmount = 1;
         ShieldImg.CrossFadeAlpha(1, 0, false);
@@ -92,6 +96,28 @@ public class GameController : MonoBehaviour
         CheckStart();
         CheckGenerateLogic();
         CheckEnd();
+    }
+
+    /// <summary>
+    /// 调用以显示全局提示信息（始终在最上层）
+    /// </summary>
+    /// <param name="content"></param>
+    public void ShowTips(string content)
+    {
+        DOTween.Kill("TipsTweener");
+        DOTween.Kill("TipsTweener_Close");
+        if (Tips.transform.localScale.y > 0)
+            Tips.transform.localScale = new Vector3(1, 0);
+
+        TipsText.text = content;
+        Tweener tweener = Tips.rectTransform.DOScaleY(1, .15f);
+        tweener.SetUpdate(true);
+        tweener.SetId("TipsTweener");
+
+        Tweener tweener_close = Tips.rectTransform.DOScaleY(0, .2f);
+        tweener_close.SetDelay(1);
+        tweener_close.SetUpdate(true);
+        tweener_close.SetId("TipsTweener_Close");
     }
 
     /// <summary>
@@ -233,6 +259,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void OnShop(GameObject go)
     {
+        ShopPanel.GetComponent<ShopUIController>().RefreshPriceColor();
         Tweener tweener = ShopPanel.rectTransform.DOLocalMoveX(0, .3f);
         tweener.SetUpdate(true);
         mStatus = GameStatus.Pause;
@@ -282,5 +309,13 @@ public class GameController : MonoBehaviour
     void OnQuit(GameObject go)
     {
         Application.Quit();
+    }
+
+    public List<GuardAI> Guards = new List<GuardAI>();
+    /// <summary>
+    /// 更新道具状态
+    /// </summary>
+    public void UpdateItem(ShopItem item)
+    {
     }
 }
