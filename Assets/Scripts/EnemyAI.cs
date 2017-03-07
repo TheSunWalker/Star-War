@@ -110,6 +110,8 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    private bool isBombDead = false;//是否被大爆炸致死
+
     /// <summary>
     /// 点击以消灭此星星
     /// </summary>
@@ -117,7 +119,25 @@ public class EnemyAI : MonoBehaviour
     {
         if (GameController.Instance.mStatus != GameStatus.Gaming)
             return;
+        isBombDead = false;
         Info.CurHp -= GameController.Instance.Damage;
+        if (Info.CurHp <= 0)
+            CheckEnd();
+        else
+        {
+            mAudioSource.PlayOneShot(HitClip);
+            if (Info.SkillList.Contains(103))
+                SkillManager.Instance.DoSkill(103, gameObject);
+        }
+    }
+
+    /// <summary>
+    /// 直接对此星星造成伤害，如果是大爆炸导致死亡，传入true来阻止循环充能
+    /// </summary>
+    public void OnHit(int damage, bool isBomb = false)
+    {
+        isBombDead = isBomb;
+        Info.CurHp -= damage;
         if (Info.CurHp <= 0)
             CheckEnd();
         else
@@ -134,6 +154,8 @@ public class EnemyAI : MonoBehaviour
     /// </summary>
     void CheckEnd(bool isBase = false)
     {
+        if (!isBombDead)
+            GameController.Instance.CheckRecharge(Info.Boss ? 3 : 1);
         if (!isBase)
         {
             mAudioSource.PlayOneShot(EndClip);
@@ -148,6 +170,7 @@ public class EnemyAI : MonoBehaviour
         }
         transform.position = new Vector3(9999, 9999);
         Destroy(gameObject, .5f);
+        GameController.Instance.RemoveEnemy(this);
     }
 
     /// <summary>

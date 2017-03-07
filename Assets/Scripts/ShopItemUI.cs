@@ -54,7 +54,7 @@ public class ShopItemUI : MonoBehaviour
         int lv = Mathf.Min(currentLevel, ConfigManager.MAX_SOHPITEM_LEVEL - 1);
         PriceText.color = GameController.Instance.Money >= mItem.Price[lv]
             ? (lv >= ConfigManager.MAX_SOHPITEM_LEVEL ? Color.black : Color.white)
-            : Color.red;
+            : (lv >= ConfigManager.MAX_SOHPITEM_LEVEL ? Color.black : Color.red);
     }
 
     /// <summary>

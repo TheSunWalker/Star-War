@@ -52,7 +52,7 @@ public class ShopUIController : MonoBehaviour
         mAudio.Play();
         GameController.Instance.FixMoney(-price);
         ui.UpdateInfo(lv + 1);
-        GameController.Instance.UpdateItem(ui.mItem);
+        GameController.Instance.UpdateItem(ui.mItem, lv + 1);
     }
 
     /// <summary>

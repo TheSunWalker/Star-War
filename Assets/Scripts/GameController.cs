@@ -20,37 +20,39 @@ public class GameController : MonoBehaviour
             Instance = this;
     }
 
-    public GameObject StarPrefab;//普通怪预设
-    public GameObject BossPrefab;//BOSS预设
-    public Transform EnemyParent;//敌人的父物体
+    public GameObject StarPrefab; //普通怪预设
+    public GameObject BossPrefab; //BOSS预设
+    public Transform EnemyParent; //敌人的父物体
 
-    public Image BaseHp;//基地血条
-    public Image ShieldImg;//需要改变透明度的护盾图片
-    public Text ShieldText;//护盾说明文字
-    private int MaxBaseHp = 100;//基地最大血量
-    private int CurBaseHp = 0;//基地当前血量
-    public float ShieldReduce = 0.6f;//护盾减速效能
-    public int Damage = 1;//单次点击伤害量
-    public int Money = 0;//金额
-    public Text MoneyText;//显示金额的文字
-    public GameObject ShopButton;//商店按钮
-    public GameObject MuteButton;//静音按钮
-    public AudioSource mAudioSource;//
-    public AudioClip BaseHitClip;//基地被击中音效
-    public AudioClip GameEndClip;//游戏结束音效
+    public Image BaseHp; //基地血条
+    public Image ShieldImg; //需要改变透明度的护盾图片
+    public Text ShieldText; //护盾说明文字
+    private float MaxBaseHp = 100; //基地最大血量
+    private float CurBaseHp = 0; //基地当前血量
+    public float ShieldReduce = 0.6f; //护盾减速效能
+    public int Damage = 1; //单次点击伤害量
+    public int Money = 0; //金额
+    public Text MoneyText; //显示金额的文字
+    public GameObject ShopButton; //商店按钮
+    public GameObject MuteButton; //静音按钮
+    public AudioSource mAudioSource; //
+    public AudioClip BaseHitClip; //基地被击中音效
+    public AudioClip GameEndClip; //游戏结束音效
+    public List<EnemyAI> EnemyList = new List<EnemyAI>(); //当前处于活跃状态的敌人列表
 
-    public Image GameEndPanel;//结束界面
-    public GameObject RestartButton;//重新开始
-    public GameObject QuitButton;//退出按钮
-    public Text ResultText;//积分文本
+    public Image GameEndPanel; //结束界面
+    public GameObject RestartButton; //重新开始
+    public GameObject QuitButton; //退出按钮
+    public Text ResultText; //积分文本
 
-    public Image ShopPanel;//商店界面
-    public GameObject CloseShopButton;//关闭商店按钮
+    public Image ShopPanel; //商店界面
+    public ShopUIController ShopScript; //商店脚本
+    public GameObject CloseShopButton; //关闭商店按钮
 
-    public Image Tips;//全局提示信息条
-    public Text TipsText;//信息内容
+    public Image Tips; //全局提示信息条
+    public Text TipsText; //信息内容
 
-    public GameStatus mStatus = GameStatus.Idle;//游戏状态
+    public GameStatus mStatus = GameStatus.Idle; //游戏状态
 
     void Start()
     {
@@ -68,6 +70,7 @@ public class GameController : MonoBehaviour
         EventTriggerListener.Get(RestartButton).onClick = OnRestart;
         EventTriggerListener.Get(QuitButton).onClick = OnQuit;
         EventTriggerListener.Get(CloseShopButton).onClick = CloseShop;
+        EventTriggerListener.Get(Guards[1].gameObject).onClick = DoBomb;
     }
 
     /// <summary>
@@ -75,6 +78,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void Init()
     {
+        EnemyList.Clear();
         ShieldReduce = 0.6f;
         CurBaseHp = MaxBaseHp = 100;
         Damage = 1;
@@ -129,17 +133,17 @@ public class GameController : MonoBehaviour
             mStatus = GameStatus.Gaming;
     }
 
-    public float GenerateIntervalTime = 0.3f;//生成间隔
-    private float _lastTime = 0;//上次生成的时间点
-    private int totalEnemyCount = 0;//当前总共生成的敌人数量
-    public int totalBossCount = 0;//当前总共生成的boss数量，充当难度等级
-    public int BossWave = 10;//当totalEnemyCount达到指定BossWave的倍数后生成Boss，随波数递增
-    public int killEnemyCount = 0;//当前总共杀死的敌人数量
-    public int killBossCount = 0;//当前总共杀死的boss数量，充当难度等级
+    public float GenerateIntervalTime = 0.3f; //生成间隔
+    private float _lastTime = 0; //上次生成的时间点
+    private int totalEnemyCount = 0; //当前总共生成的敌人数量
+    public int totalBossCount = 0; //当前总共生成的boss数量，充当难度等级
+    public int BossWave = 10; //当totalEnemyCount达到指定BossWave的倍数后生成Boss，随波数递增
+    public int killEnemyCount = 0; //当前总共杀死的敌人数量
+    public int killBossCount = 0; //当前总共杀死的boss数量，充当难度等级
 
     void CheckGenerateLogic()
     {
-        if(mStatus == GameStatus.Gaming)
+        if (mStatus == GameStatus.Gaming)
         {
             if (Time.time - _lastTime > +GenerateIntervalTime)
             {
@@ -164,12 +168,13 @@ public class GameController : MonoBehaviour
     /// <param name="num">生成的数量</param>
     void GenerateEnemy()
     {
-        bool bBoss = totalEnemyCount > 0 && totalEnemyCount % BossWave == 0;//判断是否是Boss
-        GameObject enemy = Instantiate(bBoss ? BossPrefab : StarPrefab);//实例化敌人预设体
+        bool bBoss = totalEnemyCount > 0 && totalEnemyCount%BossWave == 0; //判断是否是Boss
+        GameObject enemy = Instantiate(bBoss ? BossPrefab : StarPrefab); //实例化敌人预设体
         enemy.transform.position = new Vector3(Random.Range(50, Screen.width - 50), Screen.height + 50); //设定生成位置
-        enemy.transform.parent = EnemyParent;//加入父物体
+        enemy.transform.parent = EnemyParent; //加入父物体
         EnemyAI ai = enemy.GetComponent<EnemyAI>();
         ai.Init(bBoss);
+        EnemyList.Add(ai);
         if (bBoss)
         {
             totalBossCount++;
@@ -189,9 +194,9 @@ public class GameController : MonoBehaviour
     {
         for (int i = 0; i < num; ++i)
         {
-            GameObject enemy = Instantiate(StarPrefab);//实例化敌人预设体
+            GameObject enemy = Instantiate(StarPrefab); //实例化敌人预设体
             enemy.transform.position = point; //设定生成位置
-            enemy.transform.parent = EnemyParent;//加入父物体
+            enemy.transform.parent = EnemyParent; //加入父物体
             EnemyAI ai = enemy.GetComponent<EnemyAI>();
             ai.Init(false);
             float newX = 0;
@@ -200,6 +205,7 @@ public class GameController : MonoBehaviour
             float newY = point.y + Random.Range(-300, 300);
             Vector3 target = new Vector3(newX, newY);
             ai.Move(target, 0.35f);
+            EnemyList.Add(ai);
         }
     }
 
@@ -207,9 +213,14 @@ public class GameController : MonoBehaviour
     /// 基地被星星击中
     /// </summary>
     /// <param name="dmg">伤害量</param>
-    public void OnHit(int dmg)
+    public void OnHit(float dmg)
     {
         CurBaseHp -= dmg;
+        if (CurBaseHp < 0)
+            CurBaseHp = 0;
+        else if (CurBaseHp > MaxBaseHp)
+            CurBaseHp = MaxBaseHp;
+
         float percentage = (float) CurBaseHp/MaxBaseHp;
         BaseHp.fillAmount = percentage;
         ShieldReduce = CurBaseHp*0.006f;
@@ -221,7 +232,7 @@ public class GameController : MonoBehaviour
             mStatus = GameStatus.End;
             ShowEnd();
         }
-        else
+        else if (dmg > 0)
         {
             mAudioSource.PlayOneShot(BaseHitClip);
         }
@@ -241,7 +252,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void GetGameResult()
     {
-        ResultText.text = killEnemyCount + "\n" + killBossCount + "\n\n" + (killEnemyCount * 10 + killBossCount * 50);
+        ResultText.text = killEnemyCount + "\n" + killBossCount + "\n\n" + (killEnemyCount*10 + killBossCount*50);
     }
 
     /// <summary>
@@ -254,16 +265,23 @@ public class GameController : MonoBehaviour
         MoneyText.text = Money.ToString();
     }
 
+    private string log;
+
+    void OnGUI()
+    {
+        GUI.Label(new Rect(50, 50, 1000, 1000), log);
+    }
+
     /// <summary>
     /// 进入商店
     /// </summary>
     void OnShop(GameObject go)
     {
-        ShopPanel.GetComponent<ShopUIController>().RefreshPriceColor();
-        Tweener tweener = ShopPanel.rectTransform.DOLocalMoveX(0, .3f);
-        tweener.SetUpdate(true);
-        mStatus = GameStatus.Pause;
-        Time.timeScale = 0;
+            ShopScript.RefreshPriceColor();
+            Tweener tweener = ShopPanel.rectTransform.DOLocalMoveX(0, .3f);
+            tweener.SetUpdate(true);
+            mStatus = GameStatus.Pause;
+            Time.timeScale = 0;
     }
 
     /// <summary>
@@ -315,7 +333,52 @@ public class GameController : MonoBehaviour
     /// <summary>
     /// 更新道具状态
     /// </summary>
-    public void UpdateItem(ShopItem item)
+    public void UpdateItem(ShopItem item, int lv)
     {
+        for (int i = 0; i < Guards.Count; ++i)
+        {
+            if (int.Parse(Guards[i].name) == item.ID)
+            {
+                Guards[i].UpdateInfo(item, lv);
+                break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 返回一个随机的敌人
+    /// </summary>
+    public EnemyAI GetRandomEnemy()
+    {
+        if (EnemyList.Count <= 0)
+            return null;
+        int index = Random.Range(0, EnemyList.Count);
+        return EnemyList[index];
+    }
+
+    /// <summary>
+    /// 从敌人列表里删除某一个敌人，当他死亡或被销毁时
+    /// </summary>
+    public void RemoveEnemy(EnemyAI ai)
+    {
+        if (EnemyList.Contains(ai))
+            EnemyList.Remove(ai);
+    }
+
+    /// <summary>
+    /// 当敌人死亡时对爆炸守卫进行充能，默认为加1点，boss加3点
+    /// </summary>
+    /// <param name="charge"></param>
+    public void CheckRecharge(int charge)
+    {
+        Guards[1].DoRecharge(charge);
+    }
+
+    /// <summary>
+    /// 点击以使用大爆炸技能
+    /// </summary>
+    private void DoBomb(GameObject go)
+    {
+        Guards[1].DoBomb();
     }
 }
