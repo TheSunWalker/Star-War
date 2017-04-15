@@ -277,11 +277,11 @@ public class GameController : MonoBehaviour
     /// </summary>
     void OnShop(GameObject go)
     {
-            ShopScript.RefreshPriceColor();
-            Tweener tweener = ShopPanel.rectTransform.DOLocalMoveX(0, .3f);
-            tweener.SetUpdate(true);
-            mStatus = GameStatus.Pause;
-            Time.timeScale = 0;
+        ShopScript.RefreshPriceColor();
+        Tweener tweener = ShopPanel.rectTransform.DOLocalMoveX(0, .3f);
+        tweener.SetUpdate(true);
+        mStatus = GameStatus.Pause;
+        Time.timeScale = 0;
     }
 
     /// <summary>
